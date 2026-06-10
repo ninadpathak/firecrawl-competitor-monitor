@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Add competitor — Competitor Monitor{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{{ url_for('index') }}">&larr; Dashboard</a>
+    <div class="eyebrow">New monitor</div>
+    <h1>Add competitor</h1>
+  </div>
+</div>
+
+<form class="form panel" method="post" action="{{ url_for('create_competitor') }}">
+  <label>
+    <span class="label-text">Competitor name</span>
+    <input type="text" name="name" placeholder="Acme Corp" value="{{ form.name if form else '' }}" required>
+  </label>
+
+  <label>
+    <span class="label-text">URLs to watch</span>
+    <span class="hint">One per line. Changelogs, pricing, and docs move before the marketing site does.</span>
+    <textarea name="urls" rows="5" class="mono" placeholder="https://acme.com/changelog&#10;https://acme.com/pricing&#10;https://acme.com/blog" required>{{ form.urls if form else '' }}</textarea>
+  </label>
+
+  <label>
+    <span class="label-text">Goal <span class="optional">optional</span></span>
+    <span class="hint">Plain language. Firecrawl's AI judge uses this to decide which changes are worth telling you about.</span>
+    <textarea name="goal" rows="3" placeholder="{{ default_goal }}">{{ form.goal if form else '' }}</textarea>
+  </label>
+
+  <label>
+    <span class="label-text">Check frequency</span>
+    <span class="hint">Each check costs 1 Firecrawl credit per URL, plus 1 per changed page the judge reviews.</span>
+    <select name="schedule">
+      {% set selected_schedule = form.schedule if form else 'every 6 hours' %}
+      {% for s in schedules %}
+        <option value="{{ s }}" {% if s == selected_schedule %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Create monitor</button>
+    <a class="btn" href="{{ url_for('index') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

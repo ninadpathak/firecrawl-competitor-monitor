@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if not competitors %}
+  <div class="hero">
+    <div class="hero-mark">{% include "_flame.svg" %}</div>
+    <h1 class="hero-title">We watch your competitors,<br>so you don't have to.</h1>
+    <p class="hero-sub">Point Firecrawl at their changelog, pricing, and docs. An AI judge
+    flags the changes that matter and ignores the noise.</p>
+    <a class="btn btn-primary btn-large" href="{{ url_for('new_competitor') }}">Add your first competitor</a>
+    <div class="hero-steps">
+      <div class="hero-step">
+        <span class="hero-step-num">1</span>
+        <strong>Add URLs</strong>
+        <span>Changelog, pricing, docs, blog — the pages that move first.</span>
+      </div>
+      <div class="hero-step">
+        <span class="hero-step-num">2</span>
+        <strong>Firecrawl checks on schedule</strong>
+        <span>Every page is re-scraped and diffed against the last snapshot.</span>
+      </div>
+      <div class="hero-step">
+        <span class="hero-step-num">3</span>
+        <strong>AI filters the noise</strong>
+        <span>Only meaningful changes surface — typo fixes never page you.</span>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">Monitors</div>
+      <h1>Dashboard</h1>
+    </div>
+  </div>
+
+  <div class="grid">
+    {% for c in competitors %}
+      <a class="card" href="{{ url_for('competitor_detail', competitor_id=c.id) }}">
+        <div class="card-head">
+          <h2>{{ c.name }}</h2>
+          {% if c.monitor %}
+            <span class="pill pill-{{ c.monitor.status }}"><span class="dot"></span>{{ c.monitor.status | replace('_', ' ') }}</span>
+          {% else %}
+            <span class="pill pill-error"><span class="dot"></span>unreachable</span>
+          {% endif %}
+        </div>
+
+        <div class="card-meta mono">{{ c.urls | length }} URL{{ 's' if c.urls|length != 1 }} · {{ c.schedule }}</div>
+
+        {% if c.monitor %}
+          <div class="card-rows">
+            <div class="card-row"><span>Last check</span><span class="mono">{{ c.monitor.lastRunAt | ago }}</span></div>
+            <div class="card-row"><span>Next check</span><span class="mono">{{ c.monitor.nextRunAt | until }}</span></div>
+          </div>
+          {% set s = c.monitor.lastCheckSummary %}
+          {% if s %}
+            <div class="chips">
+              {% if s.changed and c.verdict %}
+                {% if c.verdict.meaningful %}<span class="chip chip-changed">{{ c.verdict.meaningful }} meaningful</span>{% endif %}
+                {% if c.verdict.noise %}<span class="chip chip-quiet">{{ c.verdict.noise }} noise filtered</span>{% endif %}
+              {% elif s.changed %}
+                <span class="chip chip-changed">{{ s.changed }} changed</span>
+              {% endif %}
+              {% if s.new %}<span class="chip chip-new">{{ s.new }} new</span>{% endif %}
+              {% if s.removed %}<span class="chip chip-removed">{{ s.removed }} removed</span>{% endif %}
+              {% if s.error %}<span class="chip chip-error">{{ s.error }} error{{ 's' if s.error != 1 }}</span>{% endif %}
+              {% if s.same and not s.changed and not s.new and not s.removed and not s.error %}
+                <span class="chip chip-quiet">no changes</span>
+              {% elif s.same %}
+                <span class="chip chip-quiet">{{ s.same }} same</span>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="chips"><span class="chip chip-quiet">first check pending</span></div>
+          {% endif %}
+        {% else %}
+          <div class="card-error">{{ c.monitor_error }}</div>
+        {% endif %}
+      </a>
+    {% endfor %}
+
+    <a class="card card-add" href="{{ url_for('new_competitor') }}">
+      <span class="card-add-plus">+</span>
+      <span>Add competitor</span>
+    </a>
+  </div>
+{% endif %}
+{% endblock %}

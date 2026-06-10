@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ competitor.name }} — Competitor Monitor{% endblock %}
+
+{% set live = checks | selectattr('status', 'in', ['queued', 'running']) | list %}
+{% block head %}
+  {% if live %}<meta http-equiv="refresh" content="30">{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{{ url_for('index') }}">&larr; Dashboard</a>
+    <div class="eyebrow">Competitor</div>
+    <h1>{{ competitor.name }}</h1>
+  </div>
+  <div class="actions">
+    <form method="post" action="{{ url_for('run_check', competitor_id=competitor.id) }}">
+      <button type="submit" class="btn btn-primary">Run check now</button>
+    </form>
+    <form method="post" action="{{ url_for('remove_competitor', competitor_id=competitor.id) }}"
+          onsubmit="return confirm('Delete this competitor and its Firecrawl monitor?')">
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="two-col">
+  <section class="panel">
+    <h2 class="panel-title">Monitor</h2>
+    {% if competitor.monitor %}
+      {% set m = competitor.monitor %}
+      <dl class="kv">
+        <div><dt>Status</dt><dd><span class="pill pill-{{ m.status }}"><span class="dot"></span>{{ m.status | replace('_', ' ') }}</span></dd></div>
+        <div><dt>Schedule</dt><dd>{{ competitor.schedule }} <span class="mono muted">{{ m.schedule.cron }}</span></dd></div>
+        <div><dt>Last check</dt><dd>{{ m.lastRunAt | ago }} <span class="muted">{{ m.lastRunAt | dt }}</span></dd></div>
+        <div><dt>Next check</dt><dd>{{ m.nextRunAt | until }} <span class="muted">{{ m.nextRunAt | dt }}</span></dd></div>
+        <div><dt>AI judge</dt><dd>{{ '✓ enabled' if m.judgeEnabled else 'disabled' }}</dd></div>
+        <div><dt>Est. credits</dt><dd>{{ m.estimatedCreditsPerMonth }} / month</dd></div>
+      </dl>
+      <div class="goal-note"><div class="goal-label mono">AI judge goal</div>{{ competitor.goal }}</div>
+    {% else %}
+      <p class="card-error">Monitor unreachable: {{ competitor.monitor_error }}</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Watched URLs</h2>
+    <ul class="url-list">
+      {% for url in competitor.urls %}
+        <li><a class="mono" href="{{ url }}" target="_blank" rel="noopener">{{ url }}<span class="ext">↗</span></a></li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="panel">
+  <h2 class="panel-title">Checks
+    {% if live %}<span class="live-indicator"><span class="live-dot"></span>check in progress — page refreshes automatically</span>{% endif %}
+    {% if verdict and not live %}
+      {% if verdict.meaningful %}
+        <span class="judge-note judge-note-hot">latest check: {{ verdict.meaningful }} meaningful change{{ 's' if verdict.meaningful != 1 }}</span>
+      {% elif verdict.noise %}
+        <span class="judge-note">latest check: all {{ verdict.noise }} changed page{{ 's' if verdict.noise != 1 }} judged noise</span>
+      {% endif %}
+    {% endif %}
+  </h2>
+  {% if checks %}
+    <table class="table">
+      <thead>
+        <tr><th>When</th><th>Status</th><th class="num">Changed</th><th class="num">New</th><th class="num">Removed</th><th class="num">Same</th><th class="num">Errors</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for check in checks %}
+          {% set s = check.summary or {} %}
+          <tr>
+            <td>{{ (check.startedAt or check.createdAt) | ago }}</td>
+            <td><span class="pill pill-{{ check.status }}"><span class="dot"></span>{{ check.status | replace('_', ' ') }}</span></td>
+            <td class="num mono {{ 'hot' if s.changed }}">{{ s.changed if s.changed else '·' }}</td>
+            <td class="num mono">{{ s.new if s.new else '·' }}</td>
+            <td class="num mono">{{ s.removed if s.removed else '·' }}</td>
+            <td class="num mono">{{ s.same if s.same else '·' }}</td>
+            <td class="num mono">{{ s.error if s.error else '·' }}</td>
+            <td class="row-link"><a href="{{ url_for('check_detail', competitor_id=competitor.id, check_id=check.id) }}">View →</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% elif checks_error %}
+    <p class="card-error">{{ checks_error }}</p>
+  {% else %}
+    <p class="muted">No checks yet. Trigger one with “Run check now” or wait for the schedule.</p>
+  {% endif %}
+</section>
+{% endblock %}

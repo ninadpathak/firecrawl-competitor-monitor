@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+monitor.db*
+.firecrawl/
+.gstack/
+
+# local working files, not part of the app
+article/
+FINDINGS.md
+capture_screens.py

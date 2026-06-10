@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Check — {{ competitor.name }}{% endblock %}
+
+{% block head %}
+  {% if check.status in ['queued', 'running'] %}<meta http-equiv="refresh" content="30">{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{{ url_for('competitor_detail', competitor_id=competitor.id) }}">&larr; {{ competitor.name }}</a>
+    <div class="eyebrow">Check · {{ (check.startedAt or check.createdAt) | dt }}</div>
+    <h1>{{ competitor.name }} <span class="mono muted check-id">#{{ check.id[:8] }}</span></h1>
+  </div>
+  <span class="pill pill-{{ check.status }}"><span class="dot"></span>{{ check.status | replace('_', ' ') }}</span>
+</div>
+
+{% set s = check.summary or {} %}
+<div class="chips chips-large">
+  <span class="chip {{ 'chip-changed' if meaningful else 'chip-quiet' }}">{{ meaningful }} meaningful</span>
+  {% if noise %}<span class="chip chip-quiet">{{ noise }} noise filtered</span>{% endif %}
+  <span class="chip {{ 'chip-new' if s.new else 'chip-quiet' }}">{{ s.new or 0 }} new</span>
+  <span class="chip {{ 'chip-removed' if s.removed else 'chip-quiet' }}">{{ s.removed or 0 }} removed</span>
+  <span class="chip chip-quiet">{{ s.same or 0 }} same</span>
+  <span class="chip {{ 'chip-error' if s.error else 'chip-quiet' }}">{{ s.error or 0 }} errors</span>
+  {% if check.actualCredits is not none %}<span class="chip chip-quiet mono">{{ check.actualCredits }} credits</span>{% endif %}
+</div>
+
+{% for page in check.pages or [] %}
+  <section class="panel page-result status-{{ page.status }}{% if page.isNoise %} is-noise{% endif %}">
+    <div class="page-result-head">
+      <a class="mono page-url" href="{{ page.url }}" target="_blank" rel="noopener">{{ page.url }}<span class="ext">↗</span></a>
+      {% if page.isNoise %}
+        <span class="pill pill-noise"><span class="dot"></span>changed · noise</span>
+      {% else %}
+        <span class="pill pill-{{ page.status }}"><span class="dot"></span>{{ page.status | replace('_', ' ') }}</span>
+      {% endif %}
+    </div>
+
+    {% if page.error %}
+      <p class="card-error">{{ page.error }}</p>
+    {% endif %}
+
+    {% if page.status == 'new' %}
+      <p class="muted">First snapshot of this page — future checks will diff against it.</p>
+    {% endif %}
+
+    {% if page.judgment %}
+      <div class="judgment {{ 'judgment-meaningful' if page.judgment.meaningful else 'judgment-noise' }}">
+        <div class="judgment-head">
+          <span class="judgment-icon">{{ '🔥' if page.judgment.meaningful else '💤' }}</span>
+          <strong>{{ 'Meaningful change' if page.judgment.meaningful else 'Noise — filtered out' }}</strong>
+          <span class="pill pill-confidence">{{ page.judgment.confidence }} confidence</span>
+        </div>
+        <p class="judgment-reason">{{ page.judgment.reason }}</p>
+        {% if page.judgment.meaningfulChanges %}
+          <ul class="judgment-changes">
+            {% for ch in page.judgment.meaningfulChanges %}
+              <li>
+                {% if ch.before %}<del>{{ ch.before }}</del>{% endif %}
+                {% if ch.after %}<ins>{{ ch.after }}</ins>{% endif %}
+                <div class="muted">{{ ch.reason }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if page.diff and page.diff.text %}
+      <details {% if page.status == 'changed' and not page.isNoise %}open{% endif %}>
+        <summary>Unified diff</summary>
+        <pre class="diff">{% for line in page.diff.text | diff_lines %}<span class="diff-{{ line.kind }}">{{ line.text }}</span>{% endfor %}</pre>
+      </details>
+    {% endif %}
+  </section>
+{% else %}
+  <section class="panel">
+    {% if check.status in ['queued', 'running'] %}
+      <p class="muted">No page results yet — the check is still running. This page refreshes automatically.</p>
+    {% else %}
+      <p class="muted">This check returned no page results.</p>
+    {% endif %}
+  </section>
+{% endfor %}
+{% endblock %}
