@@ -9,3 +9,6 @@ monitor.db*
 article/
 FINDINGS.md
 capture_screens.py
+capture_walkthrough.py
+preview.html
+render_preview.py

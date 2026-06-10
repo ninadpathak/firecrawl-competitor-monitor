@@ -7,11 +7,13 @@ one sentence about what you care about, and an AI judge tells you when
 something that matters actually changes. Typo fixes and rotating page noise
 never page you.
 
-![Dashboard with a competitor card showing monitor status, check times, and meaningful-change counts](screenshots/dashboard.webp)
+![Walkthrough: adding a competitor and viewing its monitor](screenshots/walkthrough.gif)
 
 Firecrawl does all the heavy lifting (scheduling, scraping, diffing, judging).
 This app is the thin dashboard on top: Flask, SQLite, one CSS file, no build
 step.
+
+![Dashboard with a competitor card showing monitor status, check times, and meaningful-change counts](screenshots/dashboard.webp)
 
 ## Run it
 
